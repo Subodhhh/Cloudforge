@@ -29,6 +29,7 @@ Developer -> Requests environment -> Auto-approved (low risk) or queued for admi
 - **Fully local** — runs entirely on a laptop using Kind (Kubernetes-in-Docker), no cloud account required
 
 ## Architecture
+```
 Developer / Admin (browser)
         |
 HTML dashboard (Jinja2) + Swagger UI
@@ -46,7 +47,7 @@ Environment Orchestrator provisions:
         |-- Helm-installed Postgres / Redis
         |
 Kind Kubernetes Cluster
-
+```
 
 ## Tech Stack
 

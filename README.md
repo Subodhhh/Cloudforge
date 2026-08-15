@@ -29,27 +29,22 @@ Developer -> Requests environment -> Auto-approved (low risk) or queued for admi
 - **Fully local** — runs entirely on a laptop using Kind (Kubernetes-in-Docker), no cloud account required
 
 ## Architecture
-                  Developer / Admin (browser)
-                          |
-              HTML dashboard (Jinja2) + Swagger UI
-                          |
-               FastAPI Backend (the "brain")
-                          |
-    -----------------------------------------------
-    |              |               |              |
-
-Auth + RBAC Policy Engine Environment Audit Log
-(JWT, roles, (auto-approve Orchestrator (every
-is_active) vs pending) sensitive
-action)
-|
--------------------------------
-| | |
-Namespace Multi-service Helm
-Deployments (Postgres/
-+ Services Redis)
-+ Ingress
-|
+Developer / Admin (browser)
+        |
+HTML dashboard (Jinja2) + Swagger UI
+        |
+FastAPI Backend (the "brain")
+        |
+        |-- Auth + RBAC (JWT, roles, is_active)
+        |-- Policy Engine (auto-approve vs pending)
+        |-- Environment Orchestrator
+        |-- Audit Log (every sensitive action)
+        |
+Environment Orchestrator provisions:
+        |-- Kubernetes Namespace
+        |-- Multi-service Deployments + Services + Ingress
+        |-- Helm-installed Postgres / Redis
+        |
 Kind Kubernetes Cluster
 
 

@@ -20,13 +20,19 @@ from app.services.environment_service import (
 
 router = APIRouter(prefix="/environments", tags=["environments"])
 
+class RegistryCredentials(BaseModel):
+    server: str
+    username: str
+    password: str
+
 
 class ServiceSpec(BaseModel):
     name: str
     image: str
     container_port: Optional[int] = None
     replicas: int = 1
-
+    env_vars: Optional[dict] = None
+    private_registry: Optional[RegistryCredentials] = None
 
 class CreateEnvironmentRequest(BaseModel):
     name: str

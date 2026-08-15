@@ -1,3 +1,5 @@
+import base64
+import json
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
@@ -69,23 +71,25 @@ def get_networking_v1_api() -> client.NetworkingV1Api:
     return client.NetworkingV1Api()
 
 
-def create_app_deployment(namespace: str, name: str = "app", image: str = "nginxdemos/hello", container_port: int = 80, replicas: int = 1):
-    """
-    Deploys the actual application container for this environment.
-    Using nginxdemos/hello as a placeholder app image — shows a live
-    hello page + pod hostname, proving the deployment is real and reachable.
-    """
+def create_app_deployment(namespace: str, name: str = "app", image: str = "nginxdemos/hello", container_port: int = 80, replicas: int = 1, env_vars: dict = None, image_pull_secret: str = None):
     apps_api = get_apps_v1_api()
+
+    env_list = [client.V1EnvVar(name=k, value=str(v)) for k, v in (env_vars or {}).items()]
 
     container = client.V1Container(
         name=name,
         image=image,
         ports=[client.V1ContainerPort(container_port=container_port)],
+        env=env_list,
     )
+
+    pod_spec_kwargs = {"containers": [container]}
+    if image_pull_secret:
+        pod_spec_kwargs["image_pull_secrets"] = [client.V1LocalObjectReference(name=image_pull_secret)]
 
     template = client.V1PodTemplateSpec(
         metadata=client.V1ObjectMeta(labels={"app": name}),
-        spec=client.V1PodSpec(containers=[container]),
+        spec=client.V1PodSpec(**pod_spec_kwargs),
     )
 
     spec = client.V1DeploymentSpec(
@@ -181,4 +185,36 @@ def create_app_ingress(namespace: str, env_name: str, service_name: str = "app")
     except ApiException as e:
         if e.status == 409:
             return {"status": "already_exists", "ingress": f"{env_name}-ingress"}
+        raise
+
+def create_image_pull_secret(namespace: str, secret_name: str, server: str, username: str, password: str):
+    """
+    Creates a Kubernetes docker-registry secret so pods in this namespace
+    can pull images from a private registry.
+    """
+    core_api = get_core_v1_api()
+
+    auth_str = base64.b64encode(f"{username}:{password}".encode()).decode()
+    docker_config = {
+        "auths": {
+            server: {
+                "username": username,
+                "password": password,
+                "auth": auth_str,
+            }
+        }
+    }
+
+    body = client.V1Secret(
+        metadata=client.V1ObjectMeta(name=secret_name, namespace=namespace),
+        type="kubernetes.io/dockerconfigjson",
+        string_data={".dockerconfigjson": json.dumps(docker_config)},
+    )
+
+    try:
+        core_api.create_namespaced_secret(namespace=namespace, body=body)
+        return {"status": "created", "secret": secret_name}
+    except ApiException as e:
+        if e.status == 409:
+            return {"status": "already_exists", "secret": secret_name}
         raise

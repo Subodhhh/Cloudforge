@@ -20,6 +20,8 @@ Developer -> Requests environment -> Auto-approved (low risk) or queued for admi
 
 - **Self-service environment provisioning** — namespace, multi-service app deployments, optional PostgreSQL and Redis, all from one request
 - **Multi-service environments** — a single environment can contain several independently deployed services (e.g. frontend + backend + worker), each with its own image, port, and URL, all networked together automatically via Kubernetes' built-in service discovery
+- **Registry & config flexibility** — deploy from any public registry (Docker Hub, GHCR, GCR, etc.) or a private registry with per-service credentials; inject custom environment variables into any service
+- **Auto-wired databases** — services in an environment with Postgres/Redis enabled automatically receive `DATABASE_URL`/`REDIS_URL` and related connection env vars — no manual wiring needed
 - **Policy-based auto-approval** — low-risk requests (short TTL, single service, no database) are provisioned instantly; requests involving databases, long TTLs, or multiple services require admin approval before any Kubernetes resources are created
 - **Role-Based Access Control (RBAC)** — Admin / Developer / Viewer roles enforced at both the route level and the resource level
 - **User lifecycle management** — admins can deactivate/reactivate accounts and promote developers to admin; deactivated users are blocked at login

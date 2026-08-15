@@ -15,7 +15,8 @@ from app.core.k8s_client import (
 from app.core.helm_runner import install_postgres, install_redis
 from app.core.policy import requires_approval
 from app.services.audit_service import log_action
-
+from app.core.helm_runner import get_postgres_connection_env, get_redis_connection_env
+from app.core.k8s_client import create_image_pull_secret
 
 def request_environment(
     db: Session,
@@ -67,6 +68,8 @@ def request_environment(
             image=svc.image,
             container_port=svc.container_port,
             replicas=svc.replicas,
+            env_vars=svc.env_vars,
+            private_registry=svc.private_registry.dict() if svc.private_registry else None,
         ))
     db.commit()
 
@@ -99,16 +102,32 @@ def provision_environment(db: Session, env: Environment) -> Environment:
         components = db.query(ServiceComponent).filter(ServiceComponent.environment_id == env.id).all()
 
         for svc in components:
+            merged_env_vars = dict(svc.env_vars or {})
+            if env.postgres_enabled:
+                merged_env_vars.update(get_postgres_connection_env(env.namespace))
+            if env.redis_enabled:
+                merged_env_vars.update(get_redis_connection_env(env.namespace))
+
+            pull_secret_name = None
+            if svc.private_registry:
+                pull_secret_name = f"{svc.name}-registry-secret"
+                create_image_pull_secret(
+                    env.namespace,
+                    secret_name=pull_secret_name,
+                    server=svc.private_registry["server"],
+                    username=svc.private_registry["username"],
+                    password=svc.private_registry["password"],
+                )
+
             create_app_deployment(
                 env.namespace,
                 name=svc.name,
                 image=svc.image,
                 container_port=svc.container_port or 80,
                 replicas=svc.replicas,
+                env_vars=merged_env_vars,
+                image_pull_secret=pull_secret_name,
             )
-            if svc.container_port:
-                create_app_service(env.namespace, name=svc.name, container_port=svc.container_port)
-                create_app_ingress(env.namespace, env_name=f"{env.name}-{svc.name}", service_name=svc.name)
 
         if env.postgres_enabled:
             result = install_postgres(env.namespace)

@@ -54,3 +54,31 @@ def uninstall_release(namespace: str, release_name: str):
 def list_releases(namespace: str):
     args = ["list", "--namespace", namespace, "-o", "json"]
     return run_helm_command(args)
+
+def get_postgres_connection_env(namespace: str) -> dict:
+    """
+    Returns env vars for connecting to the Postgres instance installed
+    in this namespace via install_postgres() (bitnami chart, release name 'postgres').
+    """
+    host = f"postgres-postgresql.{namespace}.svc.cluster.local"
+    return {
+        "DATABASE_URL": f"postgresql://postgres:cloudforge123@{host}:5432/postgres",
+        "DB_HOST": host,
+        "DB_PORT": "5432",
+        "DB_USER": "postgres",
+        "DB_PASSWORD": "cloudforge123",
+        "DB_NAME": "postgres",
+    }
+
+
+def get_redis_connection_env(namespace: str) -> dict:
+    """
+    Returns env vars for connecting to the Redis instance installed
+    in this namespace via install_redis() (bitnami chart, release name 'redis').
+    """
+    host = f"redis-master.{namespace}.svc.cluster.local"
+    return {
+        "REDIS_URL": f"redis://{host}:6379/0",
+        "REDIS_HOST": host,
+        "REDIS_PORT": "6379",
+    }

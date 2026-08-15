@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CloudForge</title>
+    <style>
+        body { font-family: monospace; max-width: 900px; margin: 40px auto; padding: 0 20px; }
+        table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+        th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: left; font-size: 13px; }
+        button { padding: 4px 10px; margin: 2px; cursor: pointer; }
+        input, select { padding: 4px; margin: 2px 0; }
+        .error { color: red; }
+        .success { color: green; }
+        nav a { margin-right: 15px; }
+        fieldset { margin: 15px 0; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a>
+        {% if user %}
+            <span>Logged in as: {{ user.username }} ({{ user.role }})</span> |
+            <a href="/logout">Logout</a>
+        {% else %}
+            <a href="/login">Login</a> | <a href="/register">Register</a>
+        {% endif %}
+    </nav>
+    <hr>
+    {% block content %}{% endblock %}
+</body>
+</html>

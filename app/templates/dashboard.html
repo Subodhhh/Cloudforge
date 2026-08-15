@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>My Environments</h2>
+
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+{% if success %}<p class="success">{{ success }}</p>{% endif %}
+
+<table>
+    <tr>
+        <th>Name</th><th>Status</th><th>Postgres</th><th>Redis</th><th>Expires At</th><th>Services / URLs</th><th>Action</th>
+    </tr>
+    {% for env in environments %}
+    <tr>
+        <td>{{ env.name }}</td>
+        <td>{{ env.status }}</td>
+        <td>{{ "Yes" if env.postgres else "No" }}</td>
+        <td>{{ "Yes" if env.redis else "No" }}</td>
+        <td>{{ env.expires_at }}</td>
+        <td>
+            {% for svc in env.services %}
+                {{ svc.name }}{% if svc.url %} (<a href="{{ svc.url }}" target="_blank">open</a>){% endif %}<br>
+            {% endfor %}
+        </td>
+        <td>
+            {% if env.status not in ["deleted", "deleting"] %}
+            <form method="post" action="/dashboard/delete/{{ env.name }}" style="display:inline">
+                <button type="submit" onclick="return confirm('Delete {{ env.name }}?')">Delete</button>
+            </form>
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+<hr>
+<h2>Request New Environment</h2>
+<form method="post" action="/dashboard/create">
+    <fieldset>
+        <legend>Basic info</legend>
+        <label>Environment name: <input type="text" name="name" required></label><br>
+        <label>TTL (hours): <input type="number" name="ttl_hours" value="4" min="1" max="72" required></label><br>
+        <label><input type="checkbox" name="postgres"> PostgreSQL</label><br>
+        <label><input type="checkbox" name="redis"> Redis</label>
+    </fieldset>
+
+    <fieldset>
+        <legend>Service (single app for now)</legend>
+        <label>Image: <input type="text" name="image" value="nginxdemos/hello" required></label><br>
+        <label>Container port: <input type="number" name="container_port" value="80" required></label>
+    </fieldset>
+
+    <button type="submit">Request Environment</button>
+</form>
+<p><small>Requests with Postgres/Redis, TTL over 8 hours, or multiple services will require admin approval.</small></p>
+{% endblock %}

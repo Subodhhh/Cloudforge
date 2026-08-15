@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block content %}
+
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+{% if success %}<p class="success">{{ success }}</p>{% endif %}
+
+<h2>Pending Approvals</h2>
+<table>
+    <tr><th>Name</th><th>Owner</th><th>Postgres</th><th>Redis</th><th>TTL (h)</th><th>Action</th></tr>
+    {% for env in pending %}
+    <tr>
+        <td>{{ env.name }}</td>
+        <td>{{ env.owner }}</td>
+        <td>{{ "Yes" if env.postgres else "No" }}</td>
+        <td>{{ "Yes" if env.redis else "No" }}</td>
+        <td>{{ env.ttl_hours }}</td>
+        <td>
+            <form method="post" action="/admin/approve/{{ env.name }}" style="display:inline">
+                <button type="submit">Approve</button>
+            </form>
+            <form method="post" action="/admin/reject/{{ env.name }}" style="display:inline">
+                <button type="submit">Reject</button>
+            </form>
+        </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6">No pending requests</td></tr>
+    {% endfor %}
+</table>
+
+<hr>
+<h2>All Environments</h2>
+<table>
+    <tr><th>Name</th><th>Owner</th><th>Status</th><th>Postgres</th><th>Redis</th><th>Expires At</th><th>Action</th></tr>
+    {% for env in all_envs %}
+    <tr>
+        <td>{{ env.name }}</td>
+        <td>{{ env.owner }}</td>
+        <td>{{ env.status }}</td>
+        <td>{{ "Yes" if env.postgres else "No" }}</td>
+        <td>{{ "Yes" if env.redis else "No" }}</td>
+        <td>{{ env.expires_at }}</td>
+        <td>
+            {% if env.status not in ["deleted", "deleting", "rejected"] %}
+            <form method="post" action="/admin/delete/{{ env.name }}" style="display:inline">
+                <button type="submit" onclick="return confirm('Delete {{ env.name }}?')">Delete</button>
+            </form>
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+<hr>
+<h2>Users</h2>
+<table>
+    <tr><th>Username</th><th>Role</th><th>Active</th><th>Action</th></tr>
+    {% for u in users %}
+    <tr>
+        <td>{{ u.username }}</td>
+        <td>{{ u.role }}</td>
+        <td>{{ "Yes" if u.is_active else "No" }}</td>
+        <td>
+            {% if u.is_active %}
+            <form method="post" action="/admin/users/{{ u.username }}/deactivate" style="display:inline">
+                <button type="submit" onclick="return confirm('Deactivate {{ u.username }}?')">Deactivate</button>
+            </form>
+            {% else %}
+            <form method="post" action="/admin/users/{{ u.username }}/reactivate" style="display:inline">
+                <button type="submit">Reactivate</button>
+            </form>
+            {% endif %}
+            {% if u.role != "admin" %}
+            <form method="post" action="/admin/users/{{ u.username }}/promote" style="display:inline">
+                <button type="submit" onclick="return confirm('Promote {{ u.username }} to admin?')">Promote to Admin</button>
+            </form>
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+<hr>
+<h2>Manual Teardown</h2>
+<form method="post" action="/admin/teardown">
+    <button type="submit">Run Teardown Now</button>
+</form>
+
+<hr>
+<h2>Audit Log (latest 50)</h2>
+<table>
+    <tr><th>Time</th><th>Actor</th><th>Action</th><th>Target</th><th>Details</th></tr>
+    {% for log in audit_logs %}
+    <tr>
+        <td>{{ log.timestamp }}</td>
+        <td>{{ log.actor }}</td>
+        <td>{{ log.action }}</td>
+        <td>{{ log.target }}</td>
+        <td>{{ log.details or "" }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}
